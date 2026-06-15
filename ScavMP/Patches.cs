@@ -1,28 +1,59 @@
+using System;
+using System.Collections;
 using HarmonyLib;
+using ScavMP.Shared;
 
 namespace ScavMP;
 
-[HarmonyPatch(typeof(Body), "FixedUpdate")]
-public static class BodyFixedUpdatePatch
+[HarmonyPatch(typeof(WorldGeneration))]
+public class Patch_WorldGeneration
 {
-    static bool Prefix(Body __instance)
+    [HarmonyPatch(typeof(WorldGeneration), nameof(WorldGeneration.WorldPreprocess))]
+    static bool WorldPreprocess_Prefix(WorldGeneration __instance)
     {
-        if (BodyRegistry.IsNetworked(__instance))
-            return false;
+        UnityEngine.Random.InitState(InternalRand.Instance.WorldSeed + 1);
         return true;
     }
-}
 
-[HarmonyPatch(typeof(PlayerCamera), "HandleInput")]
-public static class PlayerCameraHandleInputPatch
-{
-    static void Postfix(PlayerCamera __instance)
+    [HarmonyPatch(typeof(WorldGeneration), nameof(WorldGeneration.WorldCreateBackground))]
+    static bool WorldCreateBackground_Prefix(WorldGeneration __instance)
     {
-        // если тело под сетевым контролем — перезаписываем moveDir
-        // который HandleInput только что выставил
-        if (BodyRegistry.TryGetPawn(__instance.body, out var pawn))
-        {
-            __instance.body.moveDir = pawn.NetworkedMoveDir;
-        }
+        UnityEngine.Random.InitState(InternalRand.Instance.WorldSeed + 2);
+        return true;
+    }
+
+    [HarmonyPatch(typeof(WorldGeneration), nameof(WorldGeneration.WorldGenerateTerrain))]
+    static bool WorldGenerateTerrain_Prefix(WorldGeneration __instance)
+    {
+        UnityEngine.Random.InitState(InternalRand.Instance.WorldSeed + 3);
+        return true;
+    }
+
+    [HarmonyPatch(typeof(WorldGeneration), nameof(WorldGeneration.WorldGenerateWorldBorders))]
+    static bool WorldGenerateWorldBorders_Prefix(WorldGeneration __instance)
+    {
+        UnityEngine.Random.InitState(InternalRand.Instance.WorldSeed + 4);
+        return true;
+    }
+
+    [HarmonyPatch(typeof(WorldGeneration), nameof(WorldGeneration.WorldPlacePlayer))]
+    static bool WorldPlacePlayer_Prefix(WorldGeneration __instance)
+    {
+        UnityEngine.Random.InitState(InternalRand.Instance.WorldSeed + 5);
+        return true;
+    }
+
+    [HarmonyPatch(typeof(WorldGeneration), nameof(WorldGeneration.WorldPlaceEntities))]
+    static bool WorldPlaceEntities_Prefix(WorldGeneration __instance)
+    {
+        UnityEngine.Random.InitState(InternalRand.Instance.WorldSeed + 6);
+        return true;
+    }
+
+    [HarmonyPatch(typeof(WorldGeneration), nameof(WorldGeneration.FinishWorldGeneration))]
+    static bool FinishWorldGeneration_Prefix(WorldGeneration __instance)
+    {
+        UnityEngine.Random.InitState(InternalRand.Instance.WorldSeed + 7);
+        return true;
     }
 }

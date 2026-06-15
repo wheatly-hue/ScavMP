@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ScavMP.Shared;
 
-public class BaseExpieController : HumanControllerLogic<PlayerInput, BaseExpie>
+public class BaseExpieController : HumanControllerLogic<PlayerInputPacket, BaseExpie>
 {
     private readonly Camera _mainCamera;
 
@@ -13,19 +13,19 @@ public class BaseExpieController : HumanControllerLogic<PlayerInput, BaseExpie>
         _mainCamera = Camera.main;
     }
 
-    protected override void OnConstructed() { }
+    public override void OnConstructed() { }
 
-    protected override void Update()
+    public override void Update()
     {
         base.Update();
 
         if (ControlledEntity == null)
             return;
 
-        // SyncGroup логика — остаётся как была
+        // Оптимизон ёпта
         if (EntityManager.IsServer)
         {
-            const float maxPlayerDistance = 35f;
+            const float maxPlayerDistance = 200f;
             foreach (var otherPlayer in EntityManager.GetEntities<BaseExpie>())
                 ServerManager.ToggleSyncGroup(
                     OwnerId,
@@ -48,18 +48,17 @@ public class BaseExpieController : HumanControllerLogic<PlayerInput, BaseExpie>
             (Input.GetKey(KeyBinds.GetBind("up")) ? 1f : 0f)
             - (Input.GetKey(KeyBinds.GetBind("down")) ? 1f : 0f);
         input.Jump = Input.GetKey(KeyBinds.GetBind("jump"));
-        input.EndedJump = Input.GetKeyUp(KeyBinds.GetBind("jump"));
         input.Crouch = Input.GetKey(KeyBinds.GetBind("down"));
-        input.LookPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        input.LookPos = _mainCamera.ScreenToWorldPoint(Input.mousePosition);
+        ControlledEntity.SetInput(input);
     }
 }
 
-public struct PlayerInput
+public struct PlayerInputPacket
 {
     public float MoveX;
     public float MoveY;
     public bool Jump;
-    public bool EndedJump;
     public bool Crouch;
     public Vector2 LookPos;
 }

@@ -26,15 +26,15 @@ public class ServerLogic : MonoBehaviour, ILiteNetEventListener
     {
         EntityManager.RegisterFieldType<Vector2>(Vector2.Lerp);
         _netManager = new LiteNetManager(this) { AutoRecycle = true };
+
         _packetProcessor = new NetPacketProcessor();
         _packetProcessor.SubscribeReusable<JoinPacket, LiteNetPeer>(OnJoinReceived);
-        var typesMap = new EntityTypesMap<GameEntities>()
-            .Register(GameEntities.Player, e => new BaseExpie(e))
-            .Register(GameEntities.PlayerController, e => new BaseExpieController(e));
-        _typesHash = typesMap.EvaluateEntityClassDataHash();
+        RuntimeEntityTypesMap.Instance.Lock();
+
+        _typesHash = RuntimeEntityTypesMap.Instance.EvaluateEntityClassDataHash();
 
         _serverEntityManager = new ServerEntityManager(
-            typesMap,
+            RuntimeEntityTypesMap.Instance,
             (byte)PacketType.EntitySystem,
             NetworkGeneral.GameFPS,
             ServerSendRate.EqualToFPS

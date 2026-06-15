@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 using BepInEx.Logging;
 using LiteEntitySystem;
 using LiteNetLib;
@@ -19,17 +22,14 @@ public class ClientLogic : MonoBehaviour, ILiteNetEventListener
     private LiteNetPeer _server;
     private ClientEntityManager _entityManager;
     private int _ping;
-
-    private int PacketsInPerSecond;
-    private int BytesInPerSecond;
-    private int PacketsOutPerSecond;
-    private int BytesOutPerSecond;
-
     private float _secondTimer;
     private BaseExpie _ourPlayer;
     private Action<DisconnectInfo> _onDisconnected;
 
     public static ClientLogic Instance { get; private set; }
+    public ClientEntityManager EntityManager => _entityManager;
+    public NetStatistics NetStats => _netManager?.Statistics;
+    public int Ping => _ping;
 
     private static Logger _logger;
 
@@ -41,7 +41,7 @@ public class ClientLogic : MonoBehaviour, ILiteNetEventListener
 
     private void Awake()
     {
-        EntityManager.RegisterFieldType<Vector2>(Vector2.Lerp);
+        LiteEntitySystem.EntityManager.RegisterFieldType<Vector2>(Vector2.Lerp);
 
         Instance = this;
         _userName = Environment.MachineName + " " + Random.Range(0, 100000);
@@ -55,20 +55,29 @@ public class ClientLogic : MonoBehaviour, ILiteNetEventListener
     void Update()
     {
         _netManager.PollEvents();
-        _clientManager.Update();
-
-        // отправляем input если контроллер есть
-        if (_controller == null)
-            return;
-
-        ref var input = ref _controller.ModifyPendingInput();
-        input.MoveX = Input.GetAxisRaw("Horizontal");
-        input.MoveY = Input.GetAxisRaw("Vertical");
+        _entityManager?.Update();
     }
 
     public void SetName(string userName)
     {
         _userName = userName;
+    }
+
+    private void SendPacket<T>(T packet, DeliveryMethod deliveryMethod)
+        where T : class, new()
+    {
+        if (_server == null)
+            return;
+        _writer.Reset();
+        _writer.Put((byte)PacketType.Serialized);
+        _packetProcessor.Write(_writer, packet);
+        _server.Send(_writer, deliveryMethod);
+    }
+
+    void ILiteNetEventListener.OnPeerConnected(LiteNetPeer peer)
+    {
+        Debug.Log("[C] Connected to server: " + peer);
+        _server = peer;
     }
 
     void ILiteNetEventListener.OnPeerDisconnected(LiteNetPeer peer, DisconnectInfo disconnectInfo)
@@ -132,6 +141,6 @@ public class ClientLogic : MonoBehaviour, ILiteNetEventListener
     public void Connect(string ip, int port, Action<DisconnectInfo> onDisconnected)
     {
         _onDisconnected = onDisconnected;
-        _netManager.Connect(ip, port, "ExampleGame");
+        _netManager.Connect(ip, port, "ScavGame");
     }
 }

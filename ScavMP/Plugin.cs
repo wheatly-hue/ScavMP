@@ -6,6 +6,7 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using MonoMod.RuntimeDetour;
+using ScavMP.Shared;
 using UnityEngine;
 
 namespace ScavMP
@@ -26,6 +27,8 @@ namespace ScavMP
             Logger = new(new ManualLogSource(ModName));
             Instance = this;
             _harmony.PatchAll();
+            RuntimeEntityTypesMap.Instance = new();
+            ScavMPTypes.Register();
             Logger.Log($"Plugin {ModName} is loaded!");
         }
 
